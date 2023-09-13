@@ -10,6 +10,9 @@ Item::Item(std::string name, bool usable, Sprite2D *sprite, Vector2 tile_pos)
 
 Inventory::Inventory(Vector2 position, unsigned int rows, unsigned int cols)
 {
+    Inventory_BG = new Sprite2D("Assets/inventory.png");
+    Inventory_BG->position.x = position.x-3;
+    Inventory_BG->position.y = position.y -3;
     this->position = position;
     this->inventory_rows = rows;
     this->inventory_cols = cols;
@@ -26,7 +29,8 @@ void Inventory::Draw()
     {
         return;
     }
-    unsigned int ccol = 0,crow = 1;
+    unsigned int ccol = 0,crow = 0;
+    Inventory_BG->Draw();
 
     for (auto& item: Items)
     {
@@ -63,18 +67,7 @@ void Inventory::Update()
     {
         ToggleInventory();
     }
-    for (auto it = Items.begin(); it != Items.end();)
-    {
-        if ((*it)->mouse_hover && IsMouseButtonPressed(0) && (*it)->usable)
-        {
-            delete *it;
-            Items.erase(it);
-        }
-        else
-        {
-            it++;
-        }
-    }
+    
 }
 
 void Inventory::ToggleInventory()
@@ -82,19 +75,45 @@ void Inventory::ToggleInventory()
     isShowing = !isShowing;
 }
 
+std::vector<Item *> *Inventory::Get_Items()
+{
+    return &Items;
+}
+
 void Game::Start()
 {
+    
     tile_sheet = new Sprite2D("Assets/items.png",1,5);
     player_sprite = new Sprite2D("Assets/Player.png",21,13);
     tile_sheet->Scale(1,1);
 
     // Add some items to the item list
-    items.push_back(Item("1",true,tile_sheet,Vector2{1,0}));
-    items.push_back(Item("2",true,tile_sheet,Vector2{1,1}));
-    items.push_back(Item("3",true,tile_sheet,Vector2{1,2}));
-    items.push_back(Item("4",true,tile_sheet,Vector2{1,3}));
-    items.push_back(Item("5",true,tile_sheet,Vector2{1,4}));
+    items.push_back(Item("Gem",false,tile_sheet,Vector2{1,0}));
+    items.push_back(Item("Coin",false,tile_sheet,Vector2{1,1}));
+    items.push_back(Item("Fish",true,tile_sheet,Vector2{1,2}));
+    items.push_back(Item("Book",false,tile_sheet,Vector2{1,3}));
+    items.push_back(Item("Candy",true,tile_sheet,Vector2{1,4}));
+
+    items[2].add_health = 10;
+    items[4].add_speed = 0.5;
+
+    // Add items to map item list
+    // Random numbers
+    std::random_device rd;  // Seed generator from hardware or system
+    std::mt19937 mt(rd()); // Mersenne Twister engine
+
+    // We need to make sure that the random position is visible in the screen x  and y
+    std::uniform_int_distribution<int> rand_item(0, items.size()-1);
+    std::uniform_int_distribution<int> disty(50, WINDOW_HEIGHT-50);
+    std::uniform_int_distribution<int> distx(50, WINDOW_WIDTH-50);
+    std::cout << "Mapping" << std::endl;
+    for (int i = 0; i < 15; i++)
+    {
+        items_in_map[new Item(items[rand_item(mt)])] = Vector2{(float)distx(mt),(float)disty(mt)};
+    }
     
+
+    std::cout << "player" << std::endl;
     player = new Player(player_sprite);
     player->Start();
     
@@ -103,15 +122,45 @@ void Game::Start()
 
 void Game::Update()
 {
-    if (IsKeyPressed(KEY_Q))
+    if (IsKeyPressed(KEY_E))
     {
-        player->Pickup(new Item(items[0]));
+        std::vector<Item*> itemsToRemove;
+
+        for (const auto &item : items_in_map)
+        {
+            Rectangle rect = Rectangle{ item.second.x, item.second.y, item.first->sprite->GetRect().width, item.first->sprite->GetRect().height };
+            if (player->Collision(rect))
+            {
+                player->Pickup(item.first);
+                itemsToRemove.push_back(item.first);
+            }
+        }
+
+        // Remove items from the map after the loop
+        for (const auto &item : itemsToRemove)
+        {
+            items_in_map.erase(item);
+        }
     }
+
+    
     player->Update();
 }
 
 void Game::Draw()
 {
+    for (const auto &item : items_in_map)
+    {
+        if (items_in_map.find(item.first) == items_in_map.end())
+        {
+            continue;
+        }
+        item.first->sprite->DrawRectAt(item.first->tile_pos.x, item.first->tile_pos.y,item.second);
+        Rectangle rect = Rectangle{item.second.x,item.second.y,item.first->sprite->GetRect().width,item.first->sprite->GetRect().height};
+        if (player->Collision(rect)){
+            item.first->sprite->DrawOutline(BLACK);
+        }
+    }
     player->Draw();
 }
 
@@ -119,7 +168,6 @@ void Player::Movement()
 {
     if (IsKeyDown(KEY_A))
     {
-        // You can set the animation speed with SetAnimation function
         sprite->SetAnimation(animations["player_walk_l"],10);
         sprite->AnimationPlay(true);
         sprite->position.x -=speed;
@@ -144,7 +192,6 @@ void Player::Movement()
     }
     else
     {
-        // Stop animation when player stop moving
         sprite->AnimationPlay(false);
     }
 }
@@ -158,6 +205,7 @@ void Player::Start()
 {
     can_move = true;
     inventory = new Inventory(Vector2{50,400},5,4);
+    speed = 3.5;
     // Player settings
     sprite->position.x = 400;
     sprite->position.y = 300;
@@ -180,6 +228,23 @@ void Player::Update()
         Movement();
     }
     inventory->Update();
+
+    std::vector<Item*>* Items = inventory->Get_Items();
+
+    for (auto it = Items->begin(); it != Items->end();)
+    {
+        if ((*it)->mouse_hover && IsMouseButtonPressed(0) && (*it)->usable)
+        {
+            health += (*it)->add_health;
+            speed += (*it)->add_speed;
+            delete *it;
+            Items->erase(it);
+        }
+        else
+        {
+            it++;
+        }
+    }
     
 }
 
@@ -187,9 +252,33 @@ void Player::Draw()
 {
     sprite->Draw();
     inventory->Draw();
+    // Draw Health
+    std::string _health = "Health : " + std::to_string(health);
+    DrawText(_health.c_str(),20,50,20,BLACK);
+    // Draw Coins 
+    std::string _coins = "Coins : " + std::to_string(coins);
+    DrawText(_coins.c_str(),20,75,20,BLACK);
 }
 
 void Player::Pickup(Item *item)
 {
-    inventory->Add_Item(item);
+    if (item->name == "Coin")
+    {
+        delete item;
+        coins += 10;
+    }
+    else
+    {
+        inventory->Add_Item(item);
+    }
+    
+}
+
+bool Player::Collision(Rectangle rect)
+{
+    if (CheckCollisionRecs(sprite->GetRect(),rect))
+    {
+        return true;
+    }
+    return false;
 }
