@@ -168,25 +168,25 @@ void Player::Movement()
 {
     if (IsKeyDown(KEY_A))
     {
-        sprite->SetAnimation(animations["player_walk_l"],10);
+        sprite->SetAnimation(animations["player_walk_l"],15);
         sprite->AnimationPlay(true);
         sprite->position.x -=speed;
     }
     else if (IsKeyDown(KEY_D))
     {
-        sprite->SetAnimation(animations["player_walk_r"],10);
+        sprite->SetAnimation(animations["player_walk_r"],15);
         sprite->AnimationPlay(true);
         sprite->position.x +=speed;
     }
     else if (IsKeyDown(KEY_W))
     {
-        sprite->SetAnimation(animations["player_walk_t"],10);
+        sprite->SetAnimation(animations["player_walk_t"],15);
         sprite->AnimationPlay(true);
         sprite->position.y -=speed;
     }
     else if (IsKeyDown(KEY_S))
     {
-        sprite->SetAnimation(animations["player_walk_d"],10);
+        sprite->SetAnimation(animations["player_walk_d"],15);
         sprite->AnimationPlay(true);
         sprite->position.y +=speed;
     }
