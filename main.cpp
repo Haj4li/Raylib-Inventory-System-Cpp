@@ -9,7 +9,7 @@ int main() {
 
     Game game;
     // Load background texture
-    Texture2D bg = LoadTexture("Assets/BG.png");
+    Texture2D bg = LoadTexture("Assets/nbg.png");
 
 
     SetTargetFPS(60);
