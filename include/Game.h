@@ -1,6 +1,9 @@
 #include "Sprite2D.h"
 #include <string>
 #include <vector>
+#include <map>
+
+
 
 struct Item
 {
@@ -36,11 +39,36 @@ class Inventory
 
 };
 
+class Player
+{
+    private:
+        Sprite2D* sprite;
+        Inventory* inventory;
+        unsigned int health = 20;
+        float speed = 5;
+        bool can_move= false;
+        void Movement();
+
+        std::map<std::string,Animation> animations;
+    public:
+        Player(Sprite2D* sprite);
+        void Start();
+        void Update();
+        void Draw();
+        void Pickup(Item* item);
+
+
+};
+
 class Game
 {
     private:
-        Inventory* inventory;
+        Player* player;
+        Sprite2D* player_sprite;
         Sprite2D* tile_sheet;
+        std::vector<Item> items;
+        std::map<Item*,Vector2> items_in_map;
+
 
     public:
         void Start();
@@ -48,8 +76,9 @@ class Game
         void Draw();
         ~Game()
         {
-            delete inventory;
+            delete player;
             delete tile_sheet;
+            delete player_sprite;
         }
 };
 
