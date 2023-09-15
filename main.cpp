@@ -14,7 +14,7 @@ int main() {
 
     SetTargetFPS(60);
     game.Start();
-
+    //ToggleFullscreen();
     while (!WindowShouldClose())
     {
         // Update   
